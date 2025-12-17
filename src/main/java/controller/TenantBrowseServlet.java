@@ -1,9 +1,7 @@
 package controller;
 
 import dao.PropertyDAO;
-import dao.SewaDAO;
 import model.Property;
-import model.SewaRiwayat;
 import model.user;
 
 import javax.servlet.ServletException;
@@ -13,30 +11,27 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
-@WebServlet("/tenant/dashboard")
-public class TenantDashboardServlet extends HttpServlet {
+@WebServlet("/tenant/browse")
+public class TenantBrowseServlet extends HttpServlet {
 
     private PropertyDAO propertyDAO;
-    private SewaDAO sewaDAO;
-
-    private static final int RECOMMENDED_LIMIT = 20;
+    private static final int LIMIT = 20;
 
     @Override
     public void init() {
         propertyDAO = new PropertyDAO();
-        sewaDAO = new SewaDAO();
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // Extra safety: anti-cache juga di servlet (walau sudah di filter)
+        // Anti-cache
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0);
 
-        // Double safety: kalau filter belum kepasang / salah mapping, servlet tetap aman
+        // Safety (AuthFilter sudah cover /tenant/*, tapi ini double check)
         HttpSession session = request.getSession(false);
         user u = (session != null) ? (user) session.getAttribute("currentUser") : null;
 
@@ -58,31 +53,18 @@ public class TenantDashboardServlet extends HttpServlet {
         }
 
         try {
-            // Properti rekomendasi (published) + search optional
-            List<Property> recommended = propertyDAO.searchPublishedLimit(q, RECOMMENDED_LIMIT);
-
-            // Riwayat sewa tenant
-            List<SewaRiwayat> riwayat = sewaDAO.findByTenantId(u.getId());
-
-            // Statistik
-            int sewaAktif = sewaDAO.countByTenantAndStatus(u.getId(), "AKTIF");
-            int sewaSelesai = sewaDAO.countByTenantAndStatus(u.getId(), "SELESAI");
-            long totalBiaya = sewaDAO.sumTotalBiayaByTenant(u.getId());
+            List<Property> properties = propertyDAO.searchPublishedLimit(q, LIMIT);
 
             request.setAttribute("q", q);
-            request.setAttribute("recommendedProperties", recommended);
-            request.setAttribute("riwayat", riwayat);
-            request.setAttribute("sewaAktif", sewaAktif);
-            request.setAttribute("sewaSelesai", sewaSelesai);
-            request.setAttribute("totalBiaya", totalBiaya);
+            request.setAttribute("properties", properties);
             request.setAttribute("currentUser", u);
 
-            request.getRequestDispatcher("/views/dashboard/penyewa.jsp").forward(request, response);
+            request.getRequestDispatcher("/views/dashboard/tenant_browse.jsp").forward(request, response);
 
         } catch (SQLException e) {
-            throw new ServletException("Gagal load dashboard tenant (SQL): " + e.getMessage(), e);
+            throw new ServletException("Gagal load browse properti (SQL): " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new ServletException("Gagal load dashboard tenant: " + e.getMessage(), e);
+            throw new ServletException("Gagal load browse properti: " + e.getMessage(), e);
         }
     }
 }

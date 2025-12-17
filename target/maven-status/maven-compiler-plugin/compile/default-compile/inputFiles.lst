@@ -5,10 +5,17 @@ D:\tubes\RentApp\src\main\java\controller\RegisterServlet.java
 D:\tubes\RentApp\src\main\java\controller\SewaFormServlet.java
 D:\tubes\RentApp\src\main\java\controller\SewaServlet.java
 D:\tubes\RentApp\src\main\java\controller\SewaSubmitServlet.java
+D:\tubes\RentApp\src\main\java\controller\TenantBrowseServlet.java
 D:\tubes\RentApp\src\main\java\controller\TenantDashboardServlet.java
+D:\tubes\RentApp\src\main\java\controller\TenantSewaServlet.java
 D:\tubes\RentApp\src\main\java\controller\TestConnectionServlet.java
+D:\tubes\RentApp\src\main\java\dao\PropertyDAO.java
+D:\tubes\RentApp\src\main\java\dao\SewaDAO.java
+D:\tubes\RentApp\src\main\java\filter\AuthFilter.java
 D:\tubes\RentApp\src\main\java\model\Admin.java
 D:\tubes\RentApp\src\main\java\model\Pemilik.java
 D:\tubes\RentApp\src\main\java\model\Penyewa.java
+D:\tubes\RentApp\src\main\java\model\Property.java
+D:\tubes\RentApp\src\main\java\model\SewaRiwayat.java
 D:\tubes\RentApp\src\main\java\model\user.java
 D:\tubes\RentApp\src\main\java\util\DBConnection.java

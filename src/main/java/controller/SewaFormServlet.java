@@ -34,6 +34,6 @@ public class SewaFormServlet extends HttpServlet {
     }
 
     request.setAttribute("propertyId", pid);
-    request.getRequestDispatcher("views/sewa/form.jsp").forward(request, response);
+    request.getRequestDispatcher("/views/sewa/form.jsp").forward(request, response);
   }
 }
