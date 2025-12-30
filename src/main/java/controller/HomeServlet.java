@@ -1,48 +1,48 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
-import util.DBConnection;
+import dao.PropertyDAO;
+import model.Property;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.IOException;
-import java.sql.*;
+import java.sql.SQLException;
+import java.util.List;
 
-@WebServlet(name="HomeServlet", urlPatterns={"/"})
+@WebServlet(urlPatterns = {"/home", "/"})
 public class HomeServlet extends HttpServlet {
+
+    private PropertyDAO propertyDAO;
+    private static final int LIMIT = 30;
+
+    @Override
+    public void init() {
+        propertyDAO = new PropertyDAO();
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         String q = request.getParameter("q");
-        if (q == null) q = "";
+        if (q != null) {
+            q = q.trim();
+            if (q.isEmpty()) q = null;
+        }
 
-        try (Connection con = DBConnection.getConnection()) {
-            String sql =
-                "SELECT id, judul, alamat, harga_per_bulan, tipe " +
-                "FROM properties " +
-                "WHERE status='PUBLISHED' AND (judul LIKE ? OR alamat LIKE ? OR tipe LIKE ?) " +
-                "ORDER BY created_at DESC";
+        try {
+            List<Property> props = propertyDAO.searchPublishedLimit(q, LIMIT);
 
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                String like = "%" + q + "%";
-                ps.setString(1, like);
-                ps.setString(2, like);
-                ps.setString(3, like);
+            request.setAttribute("q", (q == null) ? "" : q);
+            request.setAttribute("properties", props);
 
-                ResultSet rs = ps.executeQuery();
-                request.setAttribute("rs", rs);
-                request.setAttribute("q", q);
+            request.getRequestDispatcher("/views/home.jsp").forward(request, response);
 
-                request.getRequestDispatcher("views/home.jsp").forward(request, response);
-            }
+        } catch (SQLException e) {
+            throw new ServletException("Gagal load landing (SQL): " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new ServletException(e);
+            throw new ServletException("Gagal load landing: " + e.getMessage(), e);
         }
     }
 }

@@ -8,20 +8,18 @@ import javax.servlet.http.*;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
-@WebServlet(name = "RegisterServlet", urlPatterns = {"/register"})
+@WebServlet("/register")
 public class RegisterServlet extends HttpServlet {
 
-    // GET: kalau user buka /register langsung, tampilkan form register
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        request.getRequestDispatcher("views/auth/register.jsp").forward(request, response);
-        // kalau register.jsp di root, ganti jadi "register.jsp"
+        // tampilkan halaman register
+        request.getRequestDispatcher("/views/auth/register.jsp").forward(request, response); // pastikan path register.jsp bener
     }
 
-    // POST: proses form registrasi
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -32,33 +30,52 @@ public class RegisterServlet extends HttpServlet {
         String noKontak = request.getParameter("no_kontak");
         String role = request.getParameter("role"); // TENANT / OWNER
 
+        if (isBlank(nama) || isBlank(email) || isBlank(password) || isBlank(noKontak) || isBlank(role)) {
+            request.setAttribute("error", "Semua field wajib diisi.");
+            request.getRequestDispatcher("/views/auth/register.jsp").forward(request, response);
+            return;
+        }
+
+        role = role.trim().toUpperCase();
+        if (!role.equals("TENANT") && !role.equals("OWNER")) {
+            request.setAttribute("error", "Role tidak valid.");
+            request.getRequestDispatcher("/views/auth/register.jsp").forward(request, response);
+            return;
+        }
+
         try (Connection con = DBConnection.getConnection()) {
 
-            String sql = "INSERT INTO users (nama, email, password, no_kontak, role, is_active) " +
-                         "VALUES (?, ?, ?, ?, ?, 1)";
-
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setString(1, nama);
-            ps.setString(2, email);
-            ps.setString(3, password);
-            ps.setString(4, noKontak);
-            ps.setString(5, role);
-
-            int rows = ps.executeUpdate();
-
-            if (rows > 0) {
-                // berhasil daftar → redirect ke login biar form tidak ke-submit dua kali
-                String contextPath = request.getContextPath();
-                response.sendRedirect(contextPath + "/views/login.jsp");
-                // kalau mau tetap pakai forward + message, boleh, tapi hati2 F5 ngulang insert
-            } else {
-                request.setAttribute("error", "Registrasi gagal, silakan coba lagi.");
-                request.getRequestDispatcher("views/register.jsp").forward(request, response);
+            // 1) cek email sudah ada?
+            try (PreparedStatement cek = con.prepareStatement("SELECT id FROM users WHERE email=? LIMIT 1")) {
+                cek.setString(1, email.trim());
+                try (ResultSet rs = cek.executeQuery()) {
+                    if (rs.next()) {
+                        request.setAttribute("error", "Email sudah terdaftar, silakan login.");
+                        request.getRequestDispatcher("/views/auth/register.jsp").forward(request, response);
+                        return;
+                    }
+                }
             }
 
+            // 2) insert
+            String sql = "INSERT INTO users(nama,email,password,no_kontak,role) VALUES(?,?,?,?,?)";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, nama.trim());
+                ps.setString(2, email.trim());
+                ps.setString(3, password); // (kalau mau aman: hash)
+                ps.setString(4, noKontak.trim());
+                ps.setString(5, role);
+                ps.executeUpdate();
+            }
+
+            // ✅ IMPORTANT: redirect ke ROUTE /login (bukan ke /views/login.jsp)
+            response.sendRedirect(request.getContextPath() + "/login");
         } catch (Exception e) {
-            request.setAttribute("error", "Terjadi error: " + e.getMessage());
-            request.getRequestDispatcher("views/register.jsp").forward(request, response);
+            throw new ServletException("Gagal register: " + e.getMessage(), e);
         }
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

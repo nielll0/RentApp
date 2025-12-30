@@ -42,6 +42,6 @@ public class SewaServlet extends HttpServlet {
         request.setAttribute("propertyId", propertyId);
 
         // tampilkan form sewa
-        request.getRequestDispatcher("views/sewa/form.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/sewa/form.jsp").forward(request, response);
     }
 }
